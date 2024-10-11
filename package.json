@@ -46,9 +46,13 @@
     ]
   },
   "devDependencies": {
-    
+
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "nodemon": "^3.1.7",
     "concurrently": "^7.5.0"
-  }
+  },
+  "engines": {
+    "node": "18.x" 
+}
+
 }
