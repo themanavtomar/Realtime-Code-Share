@@ -9,10 +9,8 @@ import ACTIONS from '../Actions';
 
 const Editor = ({ socketRef, roomId, onCodeChange }) => {
     const editorRef = useRef(null);
-
     useEffect(() => {
-        // Initialize the CodeMirror editor
-        const initEditor = () => {
+        async function init() {
             editorRef.current = Codemirror.fromTextArea(
                 document.getElementById('realtimeEditor'),
                 {
@@ -24,43 +22,34 @@ const Editor = ({ socketRef, roomId, onCodeChange }) => {
                 }
             );
 
-            // Handle change event to emit code changes to the socket
             editorRef.current.on('change', (instance, changes) => {
                 const { origin } = changes;
                 const code = instance.getValue();
                 onCodeChange(code);
                 if (origin !== 'setValue') {
-                    socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code });
+                    socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+                        roomId,
+                        code,
+                    });
                 }
             });
-        };
-
-        initEditor();
-
-        return () => {
-            if (editorRef.current) {
-                editorRef.current.toTextArea(); // Clean up the editor
-                editorRef.current = null; // Clear the reference
-            }
-        };
-    }, [onCodeChange, roomId, socketRef]); // Added dependencies for clarity
+        }
+        init();
+    }, []);
 
     useEffect(() => {
         if (socketRef.current) {
-            // Listen for code changes from other clients
-            const handleCodeChange = ({ code }) => {
+            socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
                 if (code !== null) {
                     editorRef.current.setValue(code);
                 }
-            };
-
-            socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
-
-            return () => {
-                socketRef.current.off(ACTIONS.CODE_CHANGE, handleCodeChange);
-            };
+            });
         }
-    }, [socketRef]); // Listen to changes in socketRef
+
+        return () => {
+            socketRef.current.off(ACTIONS.CODE_CHANGE);
+        };
+    }, [socketRef.current]);
 
     return <textarea id="realtimeEditor"></textarea>;
 };
